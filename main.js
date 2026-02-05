@@ -34,16 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function showWelcomeScreen() {
         const welcomeHTML = `
             <section id="welcome-screen" class="text-center fade-in float-up">
-                <h1 class="text-4xl font-['Gowun_Batang'] mb-4">AI Insight</h1>
-                <p class="text-lg text-gray-600 mb-8">생성형 AI 활용능력 진단</p>
+                <h1 class="text-4xl font-['Gowun_Batang'] mb-4 text-gray-100">AI Insight</h1>
+                <p class="text-lg text-gray-400 mb-8">생성형 AI 활용능력 진단</p>
                 <div class="max-w-sm mx-auto">
-                    <div class="glass-card p-8 rounded-lg shadow-lg">
-                        <label for="session-code" class="block text-lg font-medium text-gray-700 mb-4">세션 코드를 입력하세요</label>
-                        <input type="text" id="session-code" class="w-full px-4 py-3 text-2xl text-center tracking-widest border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="_ _ _ _" maxlength="4">
+                    <div class="glass-card p-8 rounded-lg shadow-lg border border-gray-700">
+                        <label for="session-code" class="block text-lg font-medium text-gray-300 mb-4">세션 코드를 입력하세요</label>
+                        <input type="text" id="session-code" class="w-full px-4 py-3 text-2xl text-center tracking-widest border-gray-600 rounded-lg focus:ring-blue-400 focus:border-blue-400 bg-gray-900 text-gray-100" placeholder="_ _ _ _" maxlength="4">
                         <button id="start-btn" class="w-full mt-6 watercolor-btn text-white font-bold py-3 px-6 rounded-lg">
                             진단 시작하기
                         </button>
-                        <p class="text-xs text-gray-500 mt-4">강사/관리자이신가요? <a href="#" id="admin-login-btn" class="text-blue-500 hover:underline">관리자 모드로 이동</a></p>
+                        <p class="text-xs text-gray-500 mt-4">강사/관리자이신가요? <a href="#" id="admin-login-btn" class="text-blue-400 hover:underline">관리자 모드로 이동</a></p>
                     </div>
                 </div>
             </section>
@@ -80,37 +80,37 @@ document.addEventListener('DOMContentLoaded', () => {
             appContainer.innerHTML = ''; // Clear previous content
             const step0HTML = `
                 <section id="step0-screen" class="fade-in float-up">
-                    <div class="glass-card p-8 shadow-lg">
-                        <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center">Step 0: 기본 정보 입력</h2>
+                    <div class="glass-card p-8 shadow-lg border border-gray-700">
+                        <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center text-gray-100">Step 0: 기본 정보 입력</h2>
                         <div class="space-y-6">
                             <div>
-                                <label for="user-name" class="block text-lg font-medium text-gray-700 mb-2">당신의 이름은 무엇인가요?</label>
-                                <input type="text" id="user-name" class="w-full px-4 py-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="이름을 입력하세요">
+                                <label for="user-name" class="block text-lg font-medium text-gray-300 mb-2">당신의 이름은 무엇인가요?</label>
+                                <input type="text" id="user-name" class="w-full px-4 py-2 border-gray-600 rounded-lg focus:ring-blue-400 focus:border-blue-400 bg-gray-900 text-gray-100" placeholder="이름을 입력하세요">
                             </div>
                             <div class="matrix-questions space-y-4">
-                                <p class="text-lg font-medium text-gray-700">AI 활용에 대한 당신의 생각을 알려주세요.</p>
-                                <div class="question-item p-3 bg-gray-50/50 rounded-lg">
-                                    <label class="text-md text-gray-700 font-semibold">1. 현재 업무/학습에 생성형 AI를 얼마나 다양하게 활용하고 있나요?</label>
-                                    <div class="flex justify-around pt-2">
-                                        <label class="flex items-center space-x-2"><input type="radio" name="tools-count" value="1" class="form-radio h-5 w-5 text-blue-400"><span>거의 안 씀 (0-1개)</span></label>
-                                        <label class="flex items-center space-x-2"><input type="radio" name="tools-count" value="3" class="form-radio h-5 w-5 text-blue-400"><span>가끔 활용 (2-3개)</span></label>
-                                        <label class="flex items-center space-x-2"><input type="radio" name="tools-count" value="5" class="form-radio h-5 w-5 text-blue-400"><span>자주 활용 (4개 이상)</span></label>
+                                <p class="text-lg font-medium text-gray-400">AI 활용에 대한 당신의 생각을 알려주세요.</p>
+                                <div class="question-item p-3 bg-gray-800/50 rounded-lg">
+                                    <label class="text-md text-gray-300 font-semibold">1. 현재 업무/학습에 생성형 AI를 얼마나 다양하게 활용하고 있나요?</label>
+                                    <div class="flex flex-wrap justify-around pt-2">
+                                        <label class="flex items-center space-x-2 m-1"><input type="radio" name="tools-count" value="1" class="form-radio h-5 w-5 text-blue-400"><span>거의 안 씀 (0-1개)</span></label>
+                                        <label class="flex items-center space-x-2 m-1"><input type="radio" name="tools-count" value="3" class="form-radio h-5 w-5 text-blue-400"><span>가끔 활용 (2-3개)</span></label>
+                                        <label class="flex items-center space-x-2 m-1"><input type="radio" name="tools-count" value="5" class="form-radio h-5 w-5 text-blue-400"><span>자주 활용 (4개 이상)</span></label>
                                     </div>
                                 </div>
-                                <div class="question-item p-3 bg-gray-50/50 rounded-lg">
-                                    <label class="text-md text-gray-700 font-semibold">2. 생성형 AI 서비스에 비용을 지불하고 사용한 경험이 있나요?</label>
-                                    <div class="flex justify-around pt-2">
-                                        <label class="flex items-center space-x-2"><input type="radio" name="paid-experience" value="1" class="form-radio h-5 w-5 text-blue-400"><span>없음</span></label>
-                                        <label class="flex items-center space-x-2"><input type="radio" name="paid-experience" value="3" class="form-radio h-5 w-5 text-blue-400"><span>고민 중</span></label>
-                                        <label class="flex items-center space-x-2"><input type="radio" name="paid-experience" value="5" class="form-radio h-5 w-5 text-blue-400"><span>있음</span></label>
+                                <div class="question-item p-3 bg-gray-800/50 rounded-lg">
+                                    <label class="text-md text-gray-300 font-semibold">2. 생성형 AI 서비스에 비용을 지불하고 사용한 경험이 있나요?</label>
+                                    <div class="flex flex-wrap justify-around pt-2">
+                                        <label class="flex items-center space-x-2 m-1"><input type="radio" name="paid-experience" value="1" class="form-radio h-5 w-5 text-blue-400"><span>없음</span></label>
+                                        <label class="flex items-center space-x-2 m-1"><input type="radio" name="paid-experience" value="3" class="form-radio h-5 w-5 text-blue-400"><span>고민 중</span></label>
+                                        <label class="flex items-center space-x-2 m-1"><input type="radio" name="paid-experience" value="5" class="form-radio h-5 w-5 text-blue-400"><span>있음</span></label>
                                     </div>
                                 </div>
-                                <div class="question-item p-3 bg-gray-50/50 rounded-lg">
-                                    <label class="text-md text-gray-700 font-semibold">3. 앞으로 생성형 AI를 얼마나 적극적으로 활용할 계획인가요?</label>
-                                    <div class="flex justify-around pt-2">
-                                        <label class="flex items-center space-x-2"><input type="radio" name="future-intent" value="1" class="form-radio h-5 w-5 text-blue-400"><span>보수적</span></label>
-                                        <label class="flex items-center space-x-2"><input type="radio" name="future-intent" value="3" class="form-radio h-5 w-5 text-blue-400"><span>보통</span></label>
-                                        <label class="flex items-center space-x-2"><input type="radio" name="future-intent" value="5" class="form-radio h-5 w-5 text-blue-400"><span>적극적</span></label>
+                                <div class="question-item p-3 bg-gray-800/50 rounded-lg">
+                                    <label class="text-md text-gray-300 font-semibold">3. 앞으로 생성형 AI를 얼마나 적극적으로 활용할 계획인가요?</label>
+                                    <div class="flex flex-wrap justify-around pt-2">
+                                        <label class="flex items-center space-x-2 m-1"><input type="radio" name="future-intent" value="1" class="form-radio h-5 w-5 text-blue-400"><span>보수적</span></label>
+                                        <label class="flex items-center space-x-2 m-1"><input type="radio" name="future-intent" value="3" class="form-radio h-5 w-5 text-blue-400"><span>보통</span></label>
+                                        <label class="flex items-center space-x-2 m-1"><input type="radio" name="future-intent" value="5" class="form-radio h-5 w-5 text-blue-400"><span>적극적</span></label>
                                     </div>
                                 </div>
                             </div>
@@ -154,16 +154,16 @@ document.addEventListener('DOMContentLoaded', () => {
         appContainer.innerHTML = ''; // Clear previous content
         const step1HTML = `
             <section id="step1-screen" class="fade-in float-up">
-                <div class="glass-card p-8 shadow-lg">
-                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center">Step 1: 관심도 진단</h2>
-                    <p class="text-lg text-gray-700 mb-6 text-center">생성형 AI에 대한 당신의 관심 정도를 알려주세요 (1점: 전혀 그렇지 않다, 5점: 매우 그렇다).</p>
+                <div class="glass-card p-8 shadow-lg border border-gray-700">
+                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center text-gray-100">Step 1: 관심도 진단</h2>
+                    <p class="text-lg text-gray-400 mb-6 text-center">생성형 AI에 대한 당신의 관심 정도를 알려주세요 (1점: 전혀 그렇지 않다, 5점: 매우 그렇다).</p>
                     <div class="space-y-6">
                         ${interestQuestions.map((question, index) => `
-                            <div class="question-item p-3 bg-gray-50/50 rounded-lg">
-                                <label class="text-md text-gray-700 font-semibold mb-2">${index + 1}. ${question}</label>
-                                <div class="flex justify-around pt-2">
+                            <div class="question-item p-3 bg-gray-800/50 rounded-lg">
+                                <label class="text-md text-gray-300 font-semibold mb-2">${index + 1}. ${question}</label>
+                                <div class="flex flex-wrap justify-around pt-2">
                                     ${[1, 2, 3, 4, 5].map(score => `
-                                        <label class="flex items-center space-x-1">
+                                        <label class="flex items-center space-x-1 m-1">
                                             <input type="radio" name="q${index + 1}" value="${score}" class="form-radio h-5 w-5 text-blue-400">
                                             <span>${score}</span>
                                         </label>
@@ -215,16 +215,16 @@ document.addEventListener('DOMContentLoaded', () => {
         appContainer.innerHTML = ''; // Clear previous content
         const step2HTML = `
             <section id="step2-screen" class="fade-in float-up">
-                <div class="glass-card p-8 shadow-lg">
-                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center">Step 2: 활용도 진단</h2>
-                    <p class="text-lg text-gray-700 mb-6 text-center">생성형 AI의 실제 활용 수준을 알려주세요 (1점: 전혀 그렇지 않다, 5점: 매우 그렇다).</p>
+                <div class="glass-card p-8 shadow-lg border border-gray-700">
+                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center text-gray-100">Step 2: 활용도 진단</h2>
+                    <p class="text-lg text-gray-400 mb-6 text-center">생성형 AI의 실제 활용 수준을 알려주세요 (1점: 전혀 그렇지 않다, 5점: 매우 그렇다).</p>
                     <div class="space-y-6">
                         ${usageQuestions.map((question, index) => `
-                            <div class="question-item p-3 bg-gray-50/50 rounded-lg">
-                                <label class="text-md text-gray-700 font-semibold mb-2">${index + 1}. ${question}</label>
-                                <div class="flex justify-around pt-2">
+                            <div class="question-item p-3 bg-gray-800/50 rounded-lg">
+                                <label class="text-md text-gray-300 font-semibold mb-2">${index + 1}. ${question}</label>
+                                <div class="flex flex-wrap justify-around pt-2">
                                     ${[1, 2, 3, 4, 5].map(score => `
-                                        <label class="flex items-center space-x-1">
+                                        <label class="flex items-center space-x-1 m-1">
                                             <input type="radio" name="usage_q${index + 1}" value="${score}" class="form-radio h-5 w-5 text-blue-400">
                                             <span>${score}</span>
                                         </label>
@@ -285,52 +285,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let persona = '';
         let personaDescription = '';
-        let personaColor = '';
+        let personaColor = ''; // Base color for persona card and dot
+        let personaChartBackgroundColor = ''; // More transparent for chart quadrants
 
         if (userData.averageInterestScore >= centerX && userData.averageUsageScore >= centerY) {
             persona = 'AI 전문가';
             personaDescription = '관심과 실력을 겸비한 전문가';
-            personaColor = '#a2c2e8'; // Blue
+            personaColor = '#63b3ed'; // Tailwind blue-300
+            personaChartBackgroundColor = 'rgba(99, 179, 237, 0.2)';
         } else if (userData.averageInterestScore >= centerX && userData.averageUsageScore < centerY) {
             persona = 'AI 꿈나무';
             personaDescription = '호기심은 많으나 실전 경험 필요';
-            personaColor = '#c5a3d1'; // Purple
+            personaColor = '#b794f4'; // Tailwind purple-300
+            personaChartBackgroundColor = 'rgba(183, 148, 244, 0.2)';
         } else if (userData.averageInterestScore < centerX && userData.averageUsageScore >= centerY) {
             persona = 'AI 재능러';
             personaDescription = '실무엔 강하나 트렌드 관심 부족';
-            personaColor = '#a7d7c5'; // Green
+            personaColor = '#68d391'; // Tailwind green-300
+            personaChartBackgroundColor = 'rgba(104, 211, 145, 0.2)';
         } else {
             persona = 'AI 병아리';
             personaDescription = '이제 막 시작하는 입문자';
-            personaColor = '#cccccc'; // Gray
+            personaColor = '#a0aec0'; // Tailwind gray-400
+            personaChartBackgroundColor = 'rgba(160, 174, 192, 0.2)';
         }
 
         const resultHTML = `
             <section id="result-screen" class="fade-in float-up">
-                <div class="glass-card p-8 shadow-lg">
-                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center">진단 결과: ${userData.name}님</h2>
+                <div class="glass-card p-8 shadow-lg border border-gray-700">
+                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center text-gray-100">진단 결과: ${userData.name}님</h2>
                     
                     <!-- Persona Card -->
-                    <div class="persona-card text-center p-6 rounded-lg mb-8" style="background-color: ${personaColor}33; border: 1px solid ${personaColor};">
-                        <h3 class="text-3xl font-['Gowun_Batang'] text-gray-800">${persona}</h3>
-                        <p class="text-lg text-gray-700 mt-2">${personaDescription}</p>
+                    <div class="persona-card text-center p-6 rounded-lg mb-8" style="background-color: ${personaChartBackgroundColor}; border: 1px solid ${personaColor};">
+                        <h3 class="text-3xl font-['Gowun_Batang'] text-gray-100">${persona}</h3>
+                        <p class="text-lg text-gray-300 mt-2">${personaDescription}</p>
                     </div>
 
                     <!-- Chart -->
-                    <div class="chart-container relative h-96 w-full mb-8">
+                    <div class="chart-container relative w-full h-96 mb-8">
                         <canvas id="insightChart"></canvas>
-                        <div class="absolute inset-0 flex justify-center items-center pointer-events-none text-gray-500 text-sm">
-                            <span class="absolute bottom-0 left-1/2 -translate-x-1/2">관심도 (Interest)</span>
-                            <span class="absolute left-0 top-1/2 -translate-y-1/2 rotate-90 -ml-8">활용도 (Usage)</span>
+                        <div class="absolute inset-0 flex justify-center items-center pointer-events-none text-gray-400 text-sm">
+                            <span class="absolute bottom-2 left-1/2 -translate-x-1/2">관심도 (Interest)</span>
+                            <span class="absolute left-2 top-1/2 -translate-y-1/2 -rotate-90">활용도 (Usage)</span>
                         </div>
                     </div>
 
                     <!-- Details -->
-                    <div class="text-center text-lg text-gray-700 space-y-2">
-                        <p><strong>세션 코드:</strong> ${userData.sessionCode}</p>
-                        <p><strong>관심도 (평균):</strong> ${userData.averageInterestScore}점</p>
-                        <p><strong>활용도 (평균):</strong> ${userData.averageUsageScore}점</p>
-                        <p><strong>열정의 농도:</strong> ${passionDensity}점</p>
+                    <div class="text-center text-lg text-gray-300 space-y-2">
+                        <p><strong>세션 코드:</strong> <span class="text-gray-100">${userData.sessionCode}</span></p>
+                        <p><strong>관심도 (평균):</strong> <span class="text-gray-100">${userData.averageInterestScore}점</span></p>
+                        <p><strong>활용도 (평균):</strong> <span class="text-gray-100">${userData.averageUsageScore}점</span></p>
+                        <p><strong>열정의 농도:</strong> <span class="text-gray-100">${passionDensity}점</span></p>
                     </div>
 
                     <button id="restart-btn" class="w-full mt-8 watercolor-btn text-white font-bold py-3 px-6 rounded-lg">
@@ -350,12 +355,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     label: userData.name,
                     data: [{
                         x: userData.averageInterestScore,
-                        y: userData.averageUsageScore,
-                        r: 5 + (parseFloat(passionDensity) - 1) * 2 // Radius based on passion density
+                        y: userData.averageUsageScore
                     }],
                     backgroundColor: personaColor,
                     borderColor: personaColor,
-                    borderWidth: 1,
+                    borderWidth: 2,
                     pointRadius: 5 + (parseFloat(passionDensity) - 1) * 2, // Map C to radius (1-5 -> 5-13)
                     pointBackgroundColor: personaColor,
                     pointBorderColor: 'white',
@@ -368,48 +372,9 @@ document.addEventListener('DOMContentLoaded', () => {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'linear',
-                        position: 'bottom',
-                        min: 1,
-                        max: 5,
-                        title: {
-                            display: true,
-                            text: '관심도 (Interest)',
-                            font: {
-                                size: 14
-                            }
-                        },
-                        grid: {
-                            color: '#e2e8f0'
-                        },
-                        ticks: {
-                            stepSize: 1
-                        }
-                    },
-                    y: {
-                        type: 'linear',
-                        min: 1,
-                        max: 5,
-                        title: {
-                            display: true,
-                            text: '활용도 (Usage)',
-                            font: {
-                                size: 14
-                            }
-                        },
-                        grid: {
-                            color: '#e2e8f0'
-                        },
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                },
                 plugins: {
                     legend: {
-                        display: false // We will handle legend manually or just show user's name
+                        display: false
                     },
                     tooltip: {
                         callbacks: {
@@ -420,10 +385,93 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                                 return label;
                             }
+                        },
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1
+                    },
+                    quadrantBackground: { // Custom plugin for quadrant background
+                        enabled: true
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        min: 1,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: '관심도 (Interest)',
+                            color: '#e2e8f0', // text-gray-300
+                            font: {
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)', // Subtle grid lines
+                            borderColor: '#a0aec0' // text-gray-400
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            color: '#e2e8f0' // text-gray-300
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        min: 1,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: '활용도 (Usage)',
+                            color: '#e2e8f0', // text-gray-300
+                            font: {
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)', // Subtle grid lines
+                            borderColor: '#a0aec0' // text-gray-400
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            color: '#e2e8f0' // text-gray-300
                         }
                     }
+                },
+                // Request 3: Quadrant coloring in chart background is handled by plugin
+            },
+            plugins: [{
+                id: 'quadrantBackground',
+                beforeDraw: (chart, args, options) => {
+                    if (!options.enabled) return;
+                    const {ctx, chartArea: {left, top, right, bottom}, scales: {x, y}} = chart;
+                    ctx.save();
+
+                    const centerX_pixel = x.getPixelForValue(centerX);
+                    const centerY_pixel = y.getPixelForValue(centerY);
+
+                    // AI 전문가 (Top Right)
+                    ctx.fillStyle = 'rgba(99, 179, 237, 0.05)'; // Light transparent blue
+                    ctx.fillRect(centerX_pixel, top, right - centerX_pixel, centerY_pixel - top);
+
+                    // AI 꿈나무 (Bottom Right)
+                    ctx.fillStyle = 'rgba(183, 148, 244, 0.05)'; // Light transparent purple
+                    ctx.fillRect(centerX_pixel, centerY_pixel, right - centerX_pixel, bottom - centerY_pixel);
+
+                    // AI 재능러 (Top Left)
+                    ctx.fillStyle = 'rgba(104, 211, 145, 0.05)'; // Light transparent green
+                    ctx.fillRect(left, top, centerX_pixel - left, centerY_pixel - top);
+
+                    // AI 병아리 (Bottom Left)
+                    ctx.fillStyle = 'rgba(160, 174, 192, 0.05)'; // Light transparent gray
+                    ctx.fillRect(left, centerY_pixel, centerX_pixel - left, bottom - centerY_pixel);
+
+                    ctx.restore();
                 }
-            }
+            }]
         });
 
         document.getElementById('restart-btn').addEventListener('click', () => {
@@ -431,10 +479,80 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Admin Login ---
     function showAdminLogin() {
-        alert('관리자 로그인 기능은 현재 개발 중입니다.');
-        // TODO: Implement Admin Login UI
+        appContainer.innerHTML = ''; // Clear current content
+        const adminLoginHTML = `
+            <section id="admin-login-screen" class="fade-in float-up text-center">
+                <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-gray-100">관리자 로그인</h2>
+                <div class="max-w-sm mx-auto">
+                    <div class="glass-card p-8 rounded-lg shadow-lg border border-gray-700">
+                        <label for="admin-password" class="block text-lg font-medium text-gray-300 mb-4">비밀번호를 입력하세요 (PW: 1234)</label>
+                        <input type="password" id="admin-password" class="w-full px-4 py-3 text-2xl text-center tracking-widest border-gray-600 rounded-lg focus:ring-blue-400 focus:border-blue-400 bg-gray-900 text-gray-100" maxlength="4">
+                        <button id="admin-login-btn-submit" class="w-full mt-6 watercolor-btn text-white font-bold py-3 px-6 rounded-lg">
+                            로그인
+                        </button>
+                        <button id="admin-back-btn" class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
+                            뒤로가기
+                        </button>
+                    </div>
+                </div>
+            </section>
+        `;
+        appContainer.innerHTML = adminLoginHTML;
+
+        document.getElementById('admin-login-btn-submit').addEventListener('click', () => {
+            const password = document.getElementById('admin-password').value;
+            if (password === '1234') { // Hardcoded password as per PRD
+                console.log('관리자 로그인 성공');
+                renderAdminDashboard();
+            } else {
+                alert('비밀번호가 틀렸습니다.');
+            }
+        });
+
+        document.getElementById('admin-back-btn').addEventListener('click', () => {
+            showWelcomeScreen();
+        });
     }
+
+    // --- Admin Dashboard (Placeholder for now) ---
+    function renderAdminDashboard() {
+        appContainer.innerHTML = ''; // Clear current content
+        const adminDashboardHTML = `
+            <section id="admin-dashboard-screen" class="fade-in float-up">
+                <div class="glass-card p-8 shadow-lg border border-gray-700">
+                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center text-gray-100">관리자 대시보드</h2>
+                    <p class="text-lg text-gray-300 text-center mb-8">세션 관리 및 결과 모니터링</p>
+                    
+                    <div class="space-y-4">
+                        <button id="create-session-btn" class="w-full watercolor-btn text-white font-bold py-3 px-6 rounded-lg">
+                            새로운 세션 생성
+                        </button>
+                        <div class="p-4 bg-gray-800/50 rounded-lg">
+                            <h3 class="text-xl font-['Gowun_Batang'] mb-4 text-gray-100">활성화된 세션</h3>
+                            <ul id="active-sessions-list" class="space-y-2 text-gray-300">
+                                <!-- Sessions will be loaded here -->
+                                <li class="text-center text-gray-500">생성된 세션이 없습니다.</li>
+                            </ul>
+                        </div>
+                        <button id="admin-dashboard-back-btn" class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
+                            뒤로가기
+                        </button>
+                    </div>
+                </div>
+            </section>
+        `;
+        appContainer.innerHTML = adminDashboardHTML;
+
+        document.getElementById('admin-dashboard-back-btn').addEventListener('click', () => {
+            showAdminLogin();
+        });
+
+        // TODO: Implement actual session management and monitoring (requires backend)
+        console.log('관리자 대시보드 렌더링. 세션 관리 및 결과 모니터링 기능은 백엔드 필요.');
+    }
+
 
     // --- Helper to inject styles ---
     function addDynamicStyles() {
@@ -451,13 +569,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 transition: all 0.2s ease-in-out;
             }
             .form-radio:focus {
-                --tw-ring-color: #38bdf8;
-                --tw-ring-offset-color: #e0f2fe;
+                --tw-ring-color: #63b3ed; /* Tailwind blue-300 */
+                --tw-ring-offset-color: #1a202c; /* Background color */
             }
             .chart-container {
                 position: relative;
                 height: 400px;
                 width: 100%;
+            }
+            /* Adjust question-item padding for better mobile spacing */
+            .question-item .flex.flex-wrap > label {
+                margin: 0.25rem; /* Added margin for radio buttons */
+            }
+            .chartjs-render-monitor {
+                background: transparent; /* Ensure canvas background is transparent */
             }
         `;
         document.head.appendChild(style);

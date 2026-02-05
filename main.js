@@ -35,71 +35,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Backend API Simulation (will be replaced by actual GAS calls) ---
     // Placeholder URL for your deployed Google Apps Script Web App
     // IMPORTANT: Replace this with your actual GAS Web App URL after deployment
-    const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE'; 
+    const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE'; // ★★★ 여기에 배포된 Google Apps Script 웹 앱 URL을 입력하세요 ★★★
 
     async function apiCall(action, payload = {}) {
         console.log(`API Call - Action: ${action}, Payload:`, payload);
-        // This is where you would make a fetch request to your GAS Web App
-        // Example:
-        // const response = await fetch(`${GAS_WEB_APP_URL}?action=${action}`, {
-        //     method: 'POST', // or 'GET' depending on your GAS doGet/doPost
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify(payload),
-        // });
-        // return response.json();
-
-        // --- SIMULATION ONLY ---
-        // Replace this entire simulation block with actual fetch calls to your GAS Web App
-        return new Promise(resolve => {
-            setTimeout(() => {
-                let result = {};
-                switch (action) {
-                    case 'GET_ALL_SESSIONS':
-                        // In a real scenario, GAS would fetch from Google Sheet
-                        result = allSessions; 
-                        break;
-                    case 'CREATE_SESSION':
-                        let newCode;
-                        do {
-                            newCode = Math.floor(1000 + Math.random() * 9000).toString();
-                        } while (allSessions.some(session => session.code === newCode));
-                        const newSession = { code: newCode, users: [], createdAt: new Date().toISOString() };
-                        allSessions.push(newSession);
-                        console.log(`[SIMULATION] Created session: ${newCode}`);
-                        result = { success: true, sessionCode: newCode };
-                        break;
-                    case 'GET_SESSION_DETAILS':
-                        const session = allSessions.find(s => s.code === payload.sessionCode);
-                        result = { success: !!session, session: session };
-                        break;
-                    case 'SUBMIT_USER_DATA':
-                        const targetSession = allSessions.find(s => s.code === payload.sessionCode);
-                        if (targetSession) {
-                            targetSession.users.push(payload.userData);
-                            console.log(`[SIMULATION] User data submitted to session ${payload.sessionCode}:`, payload.userData);
-                            result = { success: true };
-                        } else {
-                            result = { success: false, message: 'Session not found' };
-                        }
-                        break;
-                    case 'GET_SESSION_USERS':
-                        const sessionToGetUsers = allSessions.find(s => s.code === payload.sessionCode);
-                        result = { success: !!sessionToGetUsers, users: sessionToGetUsers ? sessionToGetUsers.users : [] };
-                        break;
-                    case 'DELETE_SESSION':
-                        const initialLength = allSessions.length;
-                        allSessions = allSessions.filter(s => s.code !== payload.sessionCode);
-                        console.log(`[SIMULATION] Deleted session: ${payload.sessionCode}`);
-                        result = { success: allSessions.length < initialLength };
-                        break;
-                    default:
-                        result = { success: false, message: 'Unknown API action' };
-                }
-                resolve(result);
-            }, 500); // Simulate network delay
+        const response = await fetch(`${GAS_WEB_APP_URL}?action=${action}`, {
+            method: 'POST', // GAS는 doPost를 통해 POST 요청을 처리
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            redirect: 'follow' // 필수: GAS 웹 앱 리디렉션 처리
         });
+
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            return response.json();
+        } else {
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error("Failed to parse non-JSON response from GAS:", text);
+                return { success: false, message: "Server returned non-JSON response", raw: text };
+            }
+        }
+    }
         // --- END SIMULATION ---
     }
 

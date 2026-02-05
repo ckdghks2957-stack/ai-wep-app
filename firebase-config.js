@@ -1,13 +1,14 @@
 // firebase-config.js
-// IMPORTANT: Replace all placeholder values with your actual Firebase project configuration.
+// IMPORTANT: This file contains your Firebase project configuration.
+// Do not share this file publicly or commit it to a public repository without careful consideration.
 const firebaseConfig = {
-  apiKey: "AIzaSyDuxnXy4rfowEYFbeq8F3McPCvJNvFUkQs", // Provided by user
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID" // Optional
+  apiKey: "AIzaSyDWVf1GFClmuqeL78WRgRcmuBDtWUs5gwY",
+  authDomain: "ai-vibe-coding-test1.firebaseapp.com",
+  projectId: "ai-vibe-coding-test1",
+  storageBucket: "ai-vibe-coding-test1.firebasestorage.app",
+  messagingSenderId: "856330281090",
+  appId: "1:856330281090:web:d10130aaf87293eda4949b",
+  measurementId: "G-E4PNTGCB7M"
 };
 
 // Initialize Firebase

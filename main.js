@@ -27,6 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
         "자신이 하는 일에 생성형 AI를 통합하는 자동화 워크플로우를 구축해 본 경험이 있습니다."
     ];
 
+    // --- Global Data Storage (Client-side simulation) ---
+    // Structure: { sessionCode: '1234', users: [{...userData1}, {...userData2}], createdAt: Date }
+    let allSessions = loadSessions(); 
+
     // --- Initial Render ---
     showWelcomeScreen();
 
@@ -58,9 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleStart() {
         const sessionCodeInput = document.getElementById('session-code');
         const sessionCode = sessionCodeInput.value.trim();
-        if (sessionCode.length === 4 && !isNaN(sessionCode)) {
+        // Check if session code exists
+        const sessionExists = allSessions.some(session => session.code === sessionCode);
+
+        if (sessionCode.length === 4 && !isNaN(sessionCode) && sessionExists) {
             console.log(`세션 코드 ${sessionCode}으로 진단을 시작합니다.`);
             renderStep0(sessionCode);
+        } else if (sessionCode.length === 4 && !isNaN(sessionCode) && !sessionExists) {
+            alert('존재하지 않는 세션 코드입니다. 관리자에게 문의해주세요.');
         } else {
             alert('유효한 4자리 숫자 코드를 입력해주세요.');
         }
@@ -310,6 +319,19 @@ document.addEventListener('DOMContentLoaded', () => {
             personaChartBackgroundColor = 'rgba(160, 174, 192, 0.15)'; // Increased opacity
         }
 
+        // Store user data
+        const currentSessionIndex = allSessions.findIndex(s => s.code === userData.sessionCode);
+        if (currentSessionIndex !== -1) {
+            allSessions[currentSessionIndex].users.push({
+                ...userData,
+                passionDensity: parseFloat(passionDensity),
+                persona: persona,
+                personaColor: personaColor
+            });
+            saveSessions();
+        }
+
+
         const resultHTML = `
             <section id="result-screen" class="fade-in float-up">
                 <div class="glass-card p-8 shadow-lg border border-gray-700">
@@ -453,30 +475,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     const centerX_pixel = x.getPixelForValue(centerX);
                     const centerY_pixel = y.getPixelForValue(centerY);
 
-                    // AI 전문가 (Top Right)
-                    ctx.fillStyle = 'rgba(99, 179, 237, 0.15)'; // Light transparent blue
-                    ctx.fillRect(centerX_pixel, top, right - centerX_pixel, centerY_pixel - top);
+                    // Quadrant definitions for text labels
+                    const quadrants = [
+                        { name: 'AI 전문가', x: centerX_pixel + (right - centerX_pixel) / 2, y: top + (centerY_pixel - top) / 2, fillStyle: 'rgba(99, 179, 237, 0.15)' }, // Top Right
+                        { name: 'AI 꿈나무', x: centerX_pixel + (right - centerX_pixel) / 2, y: centerY_pixel + (bottom - centerY_pixel) / 2, fillStyle: 'rgba(183, 148, 244, 0.15)' }, // Bottom Right
+                        { name: 'AI 재능러', x: left + (centerX_pixel - left) / 2, y: top + (centerY_pixel - top) / 2, fillStyle: 'rgba(104, 211, 145, 0.15)' }, // Top Left
+                        { name: 'AI 병아리', x: left + (centerX_pixel - left) / 2, y: centerY_pixel + (bottom - centerY_pixel) / 2, fillStyle: 'rgba(160, 174, 192, 0.15)' }  // Bottom Left
+                    ];
+
+                    ctx.font = 'bold 16px Gowun Dodum';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.font = 'bold 16px Gowun Dodum';
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                    ctx.fillText('AI 전문가', centerX_pixel + (right - centerX_pixel) / 2, top + (centerY_pixel - top) / 2);
 
-                    // AI 꿈나무 (Bottom Right)
-                    ctx.fillStyle = 'rgba(183, 148, 244, 0.15)'; // Light transparent purple
-                    ctx.fillRect(centerX_pixel, centerY_pixel, right - centerX_pixel, bottom - centerY_pixel);
-                    ctx.fillText('AI 꿈나무', centerX_pixel + (right - centerX_pixel) / 2, centerY_pixel + (bottom - centerY_pixel) / 2);
-
-                    // AI 재능러 (Top Left)
-                    ctx.fillStyle = 'rgba(104, 211, 145, 0.15)'; // Light transparent green
-                    ctx.fillRect(left, top, centerX_pixel - left, centerY_pixel - top);
-                    ctx.fillText('AI 재능러', left + (centerX_pixel - left) / 2, top + (centerY_pixel - top) / 2);
-
-                    // AI 병아리 (Bottom Left)
-                    ctx.fillStyle = 'rgba(160, 174, 192, 0.15)'; // Light transparent gray
-                    ctx.fillRect(left, centerY_pixel, centerX_pixel - left, bottom - centerY_pixel);
-                    ctx.fillText('AI 병아리', left + (centerX_pixel - left) / 2, centerY_pixel + (bottom - centerY_pixel) / 2);
-
+                    quadrants.forEach(q => {
+                        // Draw background
+                        ctx.fillStyle = q.fillStyle;
+                        if (q.name === 'AI 전문가') ctx.fillRect(centerX_pixel, top, right - centerX_pixel, centerY_pixel - top);
+                        else if (q.name === 'AI 꿈나무') ctx.fillRect(centerX_pixel, centerY_pixel, right - centerX_pixel, bottom - centerY_pixel);
+                        else if (q.name === 'AI 재능러') ctx.fillRect(left, top, centerX_pixel - left, centerY_pixel - top);
+                        else if (q.name === 'AI 병아리') ctx.fillRect(left, centerY_pixel, centerX_pixel - left, bottom - centerY_pixel);
+                        
+                        // Draw text
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        ctx.fillText(q.name, q.x, q.y);
+                    });
                     ctx.restore();
                 }
             }]
@@ -524,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Admin Dashboard (Placeholder for now) ---
+    // --- Admin Dashboard ---
     function renderAdminDashboard() {
         appContainer.innerHTML = ''; // Clear current content
         const adminDashboardHTML = `
@@ -541,7 +563,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h3 class="text-xl font-['Gowun_Batang'] mb-4 text-gray-100">활성화된 세션</h3>
                             <ul id="active-sessions-list" class="space-y-2 text-gray-300">
                                 <!-- Sessions will be loaded here -->
-                                <li class="text-center text-gray-500">생성된 세션이 없습니다.</li>
                             </ul>
                         </div>
                         <button id="admin-dashboard-back-btn" class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
@@ -553,12 +574,250 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         appContainer.innerHTML = adminDashboardHTML;
 
+        // Populate active sessions list
+        const activeSessionsList = document.getElementById('active-sessions-list');
+        if (allSessions.length === 0) {
+            activeSessionsList.innerHTML = `<li class="text-center text-gray-500">생성된 세션이 없습니다.</li>`;
+        } else {
+            activeSessionsList.innerHTML = allSessions.map(session => `
+                <li class="flex justify-between items-center p-2 bg-gray-900 rounded-lg">
+                    <span>세션 코드: <strong class="text-gray-100">${session.code}</strong> (${session.users.length}명 참여)</span>
+                    <button class="view-session-btn text-blue-400 hover:underline" data-session-code="${session.code}">결과 보기</button>
+                </li>
+            `).join('');
+        }
+
+        document.getElementById('create-session-btn').addEventListener('click', createNewSession);
+        document.querySelectorAll('.view-session-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const sessionCodeToView = e.target.dataset.sessionCode;
+                viewSessionResults(sessionCodeToView);
+            });
+        });
         document.getElementById('admin-dashboard-back-btn').addEventListener('click', () => {
             showAdminLogin();
         });
+    }
 
-        // TODO: Implement actual session management and monitoring (requires backend)
-        console.log('관리자 대시보드 렌더링. 세션 관리 및 결과 모니터링 기능은 백엔드 필요.');
+    function createNewSession() {
+        let newSessionCode;
+        do {
+            newSessionCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit code
+        } while (allSessions.some(session => session.code === newSessionCode)); // Ensure uniqueness
+
+        allSessions.push({
+            code: newSessionCode,
+            users: [],
+            createdAt: new Date().toISOString()
+        });
+        saveSessions();
+        alert(`새로운 세션이 생성되었습니다: ${newSessionCode}`);
+        renderAdminDashboard(); // Refresh dashboard to show new session
+    }
+
+    function viewSessionResults(sessionCode) {
+        const session = allSessions.find(s => s.code === sessionCode);
+        if (!session) {
+            alert('세션을 찾을 수 없습니다.');
+            renderAdminDashboard();
+            return;
+        }
+
+        appContainer.innerHTML = ''; // Clear current content
+        const sessionResultHTML = `
+            <section id="session-result-screen" class="fade-in float-up">
+                <div class="glass-card p-8 shadow-lg border border-gray-700">
+                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center text-gray-100">세션 결과: ${sessionCode}</h2>
+                    <p class="text-lg text-gray-300 text-center mb-8">${session.users.length}명 참여</p>
+                    
+                    <!-- Chart for multiple users -->
+                    <div class="chart-container relative w-full h-96 mb-8">
+                        <canvas id="sessionInsightChart"></canvas>
+                        <div class="absolute inset-0 flex justify-center items-center pointer-events-none text-gray-400 text-sm">
+                            <span class="absolute bottom-2 left-1/2 -translate-x-1/2">관심도 (Interest)</span>
+                            <span class="absolute left-2 top-1/2 -translate-y-1/2 -rotate-90">활용도 (Usage)</span>
+                        </div>
+                    </div>
+
+                    <!-- User List -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-['Gowun_Batang'] mb-4 text-gray-100">참여자 목록</h3>
+                        <ul id="session-users-list" class="space-y-2 text-gray-300">
+                            ${session.users.length === 0 ? 
+                                `<li class="text-center text-gray-500">이 세션에 참여한 사용자가 없습니다.</li>` :
+                                session.users.map(user => `
+                                <li class="flex justify-between items-center p-2 bg-gray-900 rounded-lg">
+                                    <span><strong class="text-gray-100">${user.name}</strong> (${user.persona})</span>
+                                    <span style="color: ${user.personaColor};">점수: X=${user.averageInterestScore}, Y=${user.averageUsageScore}, C=${user.passionDensity}</span>
+                                </li>
+                                `).join('')
+                            }
+                        </ul>
+                    </div>
+
+                    <button id="back-to-dashboard-btn" class="w-full mt-8 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
+                        대시보드로 돌아가기
+                    </button>
+                </div>
+            </section>
+        `;
+        appContainer.innerHTML = sessionResultHTML;
+
+        // Render Chart for multiple users
+        const ctx = document.getElementById('sessionInsightChart').getContext('2d');
+        
+        const datasets = session.users.map(user => {
+            return {
+                label: user.name,
+                data: [{
+                    x: user.averageInterestScore,
+                    y: user.averageUsageScore
+                }],
+                backgroundColor: user.personaColor,
+                borderColor: user.personaColor,
+                borderWidth: 2,
+                pointRadius: 5 + (user.passionDensity - 1) * 2,
+                pointBackgroundColor: user.personaColor,
+                pointBorderColor: 'white',
+                pointBorderWidth: 2,
+                pointStyle: 'circle',
+                pointHoverRadius: 8 + (user.passionDensity - 1) * 2,
+                pointHitRadius: 10
+            };
+        });
+
+        // Determine Quadrant Archetype (for chart background)
+        const centerX = 3.0;
+        const centerY = 3.0;
+
+        new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true, // Display legend for multiple users
+                        labels: {
+                            color: '#e2e8f0' // text-gray-300
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const user = session.users[context.datasetIndex];
+                                return `${user.name} (${user.persona}): 관심도 ${user.averageInterestScore}, 활용도 ${user.averageUsageScore}, 열정 ${user.passionDensity}`;
+                            }
+                        },
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1
+                    },
+                    quadrantBackground: {
+                        enabled: true
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        min: 1,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: '관심도 (Interest)',
+                            color: '#e2e8f0',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)',
+                            borderColor: '#a0aec0'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            color: '#e2e8f0'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        min: 1,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: '활용도 (Usage)',
+                            color: '#e2e8f0',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)',
+                            borderColor: '#a0aec0'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            color: '#e2e8f0'
+                        }
+                    }
+                }
+            },
+            plugins: [{
+                id: 'quadrantBackground',
+                beforeDraw: (chart, args, options) => {
+                    if (!options.enabled) return;
+                    const {ctx, chartArea: {left, top, right, bottom}, scales: {x, y}} = chart;
+                    ctx.save();
+
+                    const centerX_pixel = x.getPixelForValue(centerX);
+                    const centerY_pixel = y.getPixelForValue(centerY);
+
+                    const quadrants = [
+                        { name: 'AI 전문가', x: centerX_pixel + (right - centerX_pixel) / 2, y: top + (centerY_pixel - top) / 2, fillStyle: 'rgba(99, 179, 237, 0.15)' }, // Top Right
+                        { name: 'AI 꿈나무', x: centerX_pixel + (right - centerX_pixel) / 2, y: centerY_pixel + (bottom - centerY_pixel) / 2, fillStyle: 'rgba(183, 148, 244, 0.15)' }, // Bottom Right
+                        { name: 'AI 재능러', x: left + (centerX_pixel - left) / 2, y: top + (centerY_pixel - top) / 2, fillStyle: 'rgba(104, 211, 145, 0.15)' }, // Top Left
+                        { name: 'AI 병아리', x: left + (centerX_pixel - left) / 2, y: centerY_pixel + (bottom - centerY_pixel) / 2, fillStyle: 'rgba(160, 174, 192, 0.15)' }  // Bottom Left
+                    ];
+
+                    ctx.font = 'bold 16px Gowun Dodum';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    quadrants.forEach(q => {
+                        ctx.fillStyle = q.fillStyle;
+                        if (q.name === 'AI 전문가') ctx.fillRect(centerX_pixel, top, right - centerX_pixel, centerY_pixel - top);
+                        else if (q.name === 'AI 꿈나무') ctx.fillRect(centerX_pixel, centerY_pixel, right - centerX_pixel, bottom - centerY_pixel);
+                        else if (q.name === 'AI 재능러') ctx.fillRect(left, top, centerX_pixel - left, centerY_pixel - top);
+                        else if (q.name === 'AI 병아리') ctx.fillRect(left, centerY_pixel, centerX_pixel - left, bottom - centerY_pixel);
+                        
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        ctx.fillText(q.name, q.x, q.y);
+                    });
+                    ctx.restore();
+                }
+            }]
+        });
+
+
+        document.getElementById('back-to-dashboard-btn').addEventListener('click', () => {
+            renderAdminDashboard();
+        });
+    }
+
+    // --- Local Storage Utilities ---
+    function loadSessions() {
+        const storedSessions = localStorage.getItem('aiInsightSessions');
+        return storedSessions ? JSON.parse(storedSessions) : [];
+    }
+
+    function saveSessions() {
+        localStorage.setItem('aiInsightSessions', JSON.stringify(allSessions));
     }
 
 

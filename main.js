@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => { // Made async for initial Firestore call
+document.addEventListener('DOMContentLoaded', async () => {
 
     // --- DOM Elements ---
     const appContainer = document.getElementById('app');
@@ -122,15 +122,13 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for in
                 return { success: false, message: "Session does not exist." };
             }
 
-            await db.collection('diagnoses').add({
+            // Generate a unique ID for the diagnosis if not provided
+            const diagnosisRef = await db.collection('diagnoses').add({
                 ...diagnosisData,
                 diagnosisTime: firebase.firestore.FieldValue.serverTimestamp(),
-                // Store raw answers if needed for deeper analysis later
-                rawInterestScores: diagnosisData.interestScores,
-                rawUsageScores: diagnosisData.usageScores,
             });
-            console.log("Diagnosis data submitted to Firestore:", diagnosisData);
-            return { success: true };
+            console.log("Diagnosis data submitted to Firestore:", diagnosisRef.id, diagnosisData);
+            return { success: true, diagnosisId: diagnosisRef.id };
         } catch (error) {
             console.error("Error submitting diagnosis to Firestore:", error);
             return { success: false, message: error.message };
@@ -452,28 +450,32 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for in
             personaChartBackgroundColor = 'rgba(160, 174, 192, 0.15)'; // Increased opacity
         }
 
-        // Store user data via API
-        const userResultData = {
+        // Store user data in Firestore
+        const userDiagnosisData = {
             sessionCode: userData.sessionCode,
             name: userData.name,
-            interestScores: userData.interestScores, // Store raw scores
-            usageScores: userData.usageScores,   // Store raw scores
+            interestScores: userData.interestScores, 
+            usageScores: userData.usageScores,   
             averageInterestScore: userData.averageInterestScore,
             averageUsageScore: userData.averageUsageScore,
             passionDensity: parseFloat(passionDensity),
             persona: persona,
             personaColor: personaColor
         };
-        const submitResponse = await submitDiagnosisToFirestore(userResultData);
+        const submitResponse = await submitDiagnosisToFirestore(userDiagnosisData);
         if (!submitResponse.success) {
             alert('결과 저장에 실패했습니다. 세션 코드를 확인해주세요.');
             showWelcomeScreen();
             return;
         }
 
-        // Fetch all diagnoses for the current session to plot
-        const sessionDetails = await getSessionDetailsFromFirestore(userData.sessionCode);
-        const allDiagnosesInSession = sessionDetails.success ? sessionDetails.session.users : [userResultData]; // `users` here refers to diagnoses
+        // For individual user result screen, only plot their own diagnosis
+        const diagnosesToPlot = [
+            {
+                ...userDiagnosisData,
+                id: submitResponse.diagnosisId // Use the ID returned from Firestore for their own diagnosis
+            }
+        ];
 
         const resultHTML = `
             <section id="result-screen" class="fade-in float-up">
@@ -513,7 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for in
 
         // Render Chart
         const ctx = document.getElementById('insightChart').getContext('2d');
-        const datasetsForChart = allDiagnosesInSession.map(diagnosis => ({
+        const datasetsForChart = diagnosesToPlot.map(diagnosis => ({
             label: diagnosis.name,
             data: [{
                 x: diagnosis.averageInterestScore,
@@ -549,7 +551,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for in
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                const userDiagnosis = allDiagnosesInSession[context.datasetIndex];
+                                const userDiagnosis = diagnosesToPlot[context.datasetIndex];
                                 return `${userDiagnosis.name} (${userDiagnosis.persona}): 관심도 ${userDiagnosis.averageInterestScore}, 활용도 ${userDiagnosis.averageUsageScore}, 열정 ${userDiagnosis.passionDensity}`;
                             }
                         },
@@ -968,6 +970,326 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for in
             }]
         });
 
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            showWelcomeScreen(); // Go back to the welcome screen
+        });
+    }
+
+    // --- Admin Login ---
+    function showAdminLogin() {
+        appContainer.innerHTML = ''; // Clear current content
+        const adminLoginHTML = `
+            <section id="admin-login-screen" class="fade-in float-up text-center">
+                <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-gray-100">관리자 로그인</h2>
+                <div class="max-w-sm mx-auto">
+                    <div class="glass-card p-8 rounded-lg shadow-lg border border-gray-700">
+                        <label for="admin-password" class="block text-lg font-medium text-gray-300 mb-4">비밀번호를 입력하세요 (PW: 1234)</label>
+                        <input type="password" id="admin-password" class="w-full px-4 py-3 text-2xl text-center tracking-widest border-gray-600 rounded-lg focus:ring-blue-400 focus:border-blue-400 bg-gray-900 text-gray-100" maxlength="4">
+                        <button id="admin-login-btn-submit" class="w-full mt-6 watercolor-btn text-white font-bold py-3 px-6 rounded-lg">
+                            로그인
+                        </button>
+                        <button id="admin-back-btn" class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
+                            뒤로가기
+                        </button>
+                    </div>
+                </div>
+            </section>
+        `;
+        appContainer.innerHTML = adminLoginHTML;
+
+        document.getElementById('admin-login-btn-submit').addEventListener('click', () => {
+            const password = document.getElementById('admin-password').value;
+            if (password === '1234') { // Hardcoded password as per PRD
+                console.log('관리자 로그인 성공');
+                renderAdminDashboard();
+            } else {
+                alert('비밀번호가 틀렸습니다.');
+            }
+        });
+
+        document.getElementById('admin-back-btn').addEventListener('click', () => {
+            showWelcomeScreen();
+        });
+    }
+
+    // --- Admin Dashboard ---
+    async function renderAdminDashboard() {
+        const allSessionsWithDiagnoses = await getAllSessionsWithDiagnosesFromFirestore();
+        console.log("Fetched sessions for dashboard:", allSessionsWithDiagnoses);
+        
+        appContainer.innerHTML = ''; // Clear current content
+        const adminDashboardHTML = `
+            <section id="admin-dashboard-screen" class="fade-in float-up">
+                <div class="glass-card p-8 shadow-lg border border-gray-700">
+                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center text-gray-100">관리자 대시보드</h2>
+                    <p class="text-lg text-gray-300 text-center mb-8">세션 관리 및 결과 모니터링</p>
+                    
+                    <div class="space-y-4">
+                        <button id="create-session-btn" class="w-full watercolor-btn text-white font-bold py-3 px-6 rounded-lg">
+                            새로운 세션 생성
+                        </button>
+                        <div class="p-4 bg-gray-800/50 rounded-lg">
+                            <h3 class="text-xl font-['Gowun_Batang'] mb-4 text-gray-100">활성화된 세션</h3>
+                            <ul id="active-sessions-list" class="space-y-2 text-gray-300">
+                                <!-- Sessions will be loaded here -->
+                            </ul>
+                        </div>
+                        <button id="admin-dashboard-back-btn" class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
+                            뒤로가기
+                        </button>
+                    </div>
+                </div>
+            </section>
+        `;
+        appContainer.innerHTML = adminDashboardHTML;
+
+        // Populate active sessions list
+        const activeSessionsList = document.getElementById('active-sessions-list');
+        if (allSessionsWithDiagnoses.length === 0) {
+            activeSessionsList.innerHTML = `<li class="text-center text-gray-500">생성된 세션이 없습니다.</li>`;
+        } else {
+            activeSessionsList.innerHTML = allSessionsWithDiagnoses.map(session => `
+                <li class="flex justify-between items-center p-2 bg-gray-900 rounded-lg">
+                    <span>세션 코드: <strong class="text-gray-100">${session.code}</strong> (${session.users.length}명 참여)</span>
+                    <div>
+                        <button class="view-session-btn text-blue-400 hover:underline mr-2" data-session-code="${session.code}">결과 보기</button>
+                        <button class="delete-session-btn text-red-400 hover:underline" data-session-code="${session.code}">삭제</button>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        document.getElementById('create-session-btn').addEventListener('click', createNewSession);
+        document.querySelectorAll('.view-session-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const sessionCodeToView = e.target.dataset.sessionCode;
+                viewSessionResults(sessionCodeToView);
+            });
+        });
+        document.querySelectorAll('.delete-session-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const sessionCodeToDelete = e.target.dataset.sessionCode;
+                if (confirm(`정말로 세션 ${sessionCodeToDelete}를 삭제하시겠습니까?`)) {
+                    deleteSession(sessionCodeToDelete);
+                }
+            });
+        });
+        document.getElementById('admin-dashboard-back-btn').addEventListener('click', () => {
+            showAdminLogin();
+        });
+    }
+
+    async function createNewSession() {
+        const response = await createSessionInFirestore();
+        if (response.success) {
+            alert(`새로운 세션이 생성되었습니다: ${response.sessionCode}`);
+            renderAdminDashboard(); // Refresh dashboard
+        } else {
+            alert('세션 생성에 실패했습니다: ' + response.message);
+        }
+    }
+
+    async function deleteSession(sessionCode) {
+        const response = await deleteSessionAndDiagnosesFromFirestore(sessionCode);
+        if (response.success) {
+            alert(`세션 ${sessionCode}가 삭제되었습니다.`);
+            renderAdminDashboard(); // Refresh dashboard
+        } else {
+            alert('세션 삭제에 실패했습니다: ' + response.message);
+        }
+    }
+
+    async function viewSessionResults(sessionCode) {
+        const sessionDetails = await getSessionDetailsFromFirestore(sessionCode);
+        if (!sessionDetails.success || !sessionDetails.session) {
+            alert('세션을 찾을 수 없거나 데이터를 불러오지 못했습니다.');
+            renderAdminDashboard();
+            return;
+        }
+        const session = sessionDetails.session;
+
+        appContainer.innerHTML = ''; // Clear current content
+        const sessionResultHTML = `
+            <section id="session-result-screen" class="fade-in float-up">
+                <div class="glass-card p-8 shadow-lg border border-gray-700">
+                    <h2 class="text-2xl font-['Gowun_Batang'] mb-6 text-center text-gray-100">세션 결과: ${sessionCode}</h2>
+                    <p class="text-lg text-gray-300 text-center mb-8">${session.users.length}명 참여</p>
+                    
+                    <!-- Chart for multiple users -->
+                    <div class="chart-container relative w-full h-96 mb-8">
+                        <canvas id="sessionInsightChart"></canvas>
+                        <div class="absolute inset-0 flex justify-center items-center pointer-events-none text-gray-400 text-sm">
+                            <span class="absolute bottom-2 left-1/2 -translate-x-1/2">관심도 (Interest)</span>
+                            <span class="absolute left-2 top-1/2 -translate-y-1/2 -rotate-90">활용도 (Usage)</span>
+                        </div>
+                    </div>
+
+                    <!-- User List -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-['Gowun_Batang'] mb-4 text-gray-100">참여자 목록</h3>
+                        <ul id="session-users-list" class="space-y-2 text-gray-300">
+                            ${session.users.length === 0 ? 
+                                `<li class="text-center text-gray-500">이 세션에 참여한 사용자가 없습니다.</li>` :
+                                session.users.map(user => `
+                                <li class="flex justify-between items-center p-2 bg-gray-900 rounded-lg">
+                                    <span><strong class="text-gray-100">${user.name}</strong> (${user.persona})</span>
+                                    <span style="color: ${user.personaColor};">X=${user.averageInterestScore}, Y=${user.averageUsageScore}, C=${user.passionDensity}</span>
+                                </li>
+                                `).join('')
+                            }
+                        </ul>
+                    </div>
+
+                    <button id="back-to-dashboard-btn" class="w-full mt-8 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
+                        대시보드로 돌아가기
+                    </button>
+                </div>
+            </section>
+        `;
+        appContainer.innerHTML = sessionResultHTML;
+
+        // Render Chart for multiple users
+        const ctx = document.getElementById('sessionInsightChart').getContext('2d');
+        
+        const datasets = session.users.map(user => {
+            return {
+                label: user.name,
+                data: [{
+                    x: user.averageInterestScore,
+                    y: user.averageUsageScore
+                }],
+                backgroundColor: user.personaColor,
+                borderColor: user.personaColor,
+                borderWidth: 2,
+                pointRadius: 5 + (user.passionDensity - 1) * 2,
+                pointBackgroundColor: user.personaColor,
+                pointBorderColor: 'white',
+                pointBorderWidth: 2,
+                pointStyle: 'circle',
+                pointHoverRadius: 8 + (user.passionDensity - 1) * 2,
+                pointHitRadius: 10
+            };
+        });
+
+        // Determine Quadrant Archetype (for chart background)
+        const centerX = 3.0;
+        const centerY = 3.0;
+
+        new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true, // Display legend for multiple users
+                        labels: {
+                            color: '#e2e8f0' // text-gray-300
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const user = session.users[context.datasetIndex];
+                                return `${user.name} (${user.persona}): 관심도 ${user.averageInterestScore}, 활용도 ${user.averageUsageScore}, 열정 ${user.passionDensity}`;
+                            }
+                        },
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1
+                    },
+                    quadrantBackground: {
+                        enabled: true
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        min: 1,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: '관심도 (Interest)',
+                            color: '#e2e8f0',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)',
+                            borderColor: '#a0aec0'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            color: '#e2e8f0'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        min: 1,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: '활용도 (Usage)',
+                            color: '#e2e8f0',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)',
+                            borderColor: '#a0aec0'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            color: '#e2e8f0'
+                        }
+                    }
+                }
+            },
+            plugins: [{
+                id: 'quadrantBackground',
+                beforeDraw: (chart, args, options) => {
+                    if (!options.enabled) return;
+                    const {ctx, chartArea: {left, top, right, bottom}, scales: {x, y}} = chart;
+                    ctx.save();
+
+                    const centerX_pixel = x.getPixelForValue(centerX);
+                    const centerY_pixel = y.getPixelForValue(centerY);
+
+                    const quadrants = [
+                        { name: 'AI 전문가', x: centerX_pixel + (right - centerX_pixel) / 2, y: top + (centerY_pixel - top) / 2, fillStyle: 'rgba(99, 179, 237, 0.15)' }, // Top Right
+                        { name: 'AI 꿈나무', x: centerX_pixel + (right - centerX_pixel) / 2, y: centerY_pixel + (bottom - centerY_pixel) / 2, fillStyle: 'rgba(183, 148, 244, 0.15)' }, // Bottom Right
+                        { name: 'AI 재능러', x: left + (centerX_pixel - left) / 2, y: top + (centerY_pixel - top) / 2, fillStyle: 'rgba(104, 211, 145, 0.15)' }, // Top Left
+                        { name: 'AI 병아리', x: left + (centerX_pixel - left) / 2, y: centerY_pixel + (bottom - centerY_pixel) / 2, fillStyle: 'rgba(160, 174, 192, 0.15)' }  // Bottom Left
+                    ];
+
+                    ctx.font = 'bold 16px Gowun Dodum';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    quadrants.forEach(q => {
+                        // Draw background
+                        ctx.fillStyle = q.fillStyle;
+                        if (q.name === 'AI 전문가') ctx.fillRect(centerX_pixel, top, right - centerX_pixel, centerY_pixel - top);
+                        else if (q.name === 'AI 꿈나무') ctx.fillRect(centerX_pixel, centerY_pixel, right - centerX_pixel, bottom - centerY_pixel);
+                        else if (q.name === 'AI 재능러') ctx.fillRect(left, top, centerX_pixel - left, centerY_pixel - top);
+                        else if (q.name === 'AI 병아리') ctx.fillRect(left, centerY_pixel, centerX_pixel - left, bottom - centerY_pixel);
+                        
+                        // Draw text
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        ctx.fillText(q.name, q.x, q.y);
+                    });
+                    ctx.restore();
+                }
+            }]
+        });
 
         document.getElementById('restart-btn').addEventListener('click', () => {
             showWelcomeScreen(); // Go back to the welcome screen

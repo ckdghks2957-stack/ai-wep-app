@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => { // Made async for initial Firestore call
+
     // --- DOM Elements ---
     const appContainer = document.getElementById('app');
 
@@ -27,52 +28,144 @@ document.addEventListener('DOMContentLoaded', () => {
         "자신이 하는 일에 생성형 AI를 통합하는 자동화 워크플로우를 구축해 본 경험이 있습니다."
     ];
 
-    // --- Global Data Storage (Client-side simulation) ---
-    // NOTE: This will be replaced by actual API calls to Google Apps Script.
-    // For now, it simulates an empty state or pre-loaded data.
-    let allSessions = []; 
+    // --- Firebase Firestore Interaction Functions ---
 
-    // --- Backend API Simulation (will be replaced by actual GAS calls) ---
-    // Placeholder URL for your deployed Google Apps Script Web App
-    // IMPORTANT: Replace this with your actual GAS Web App URL after deployment
-    const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE'; // ★★★ 여기에 배포된 Google Apps Script 웹 앱 URL을 입력하세요 ★★★
-
-    async function apiCall(action, payload = {}) {
-        console.log(`API Call - Action: ${action}, Payload:`, payload);
-        const response = await fetch(`${GAS_WEB_APP_URL}?action=${action}`, {
-            method: 'POST', // GAS는 doPost를 통해 POST 요청을 처리
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-            redirect: 'follow' // 필수: GAS 웹 앱 리디렉션 처리
-        });
-
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-            return response.json();
-        } else {
-            const text = await response.text();
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                console.error("Failed to parse non-JSON response from GAS:", text);
-                return { success: false, message: "Server returned non-JSON response", raw: text };
-            }
+    /**
+     * Fetches all existing session codes from Firestore.
+     * @returns {Array<string>} An array of session codes.
+     */
+    async function getAllSessionCodesFromFirestore() {
+        try {
+            const sessionsSnapshot = await db.collection('sessions').get();
+            return sessionsSnapshot.docs.map(doc => doc.id); // Assuming sessionCode is the document ID
+        } catch (error) {
+            console.error("Error getting all session codes:", error);
+            return [];
         }
     }
-        // --- END SIMULATION ---
+
+    /**
+     * Fetches all sessions from Firestore, including their users (diagnoses).
+     * @returns {Array<Object>} An array of session objects.
+     */
+    async function getAllSessionsWithDiagnosesFromFirestore() {
+        try {
+            const sessionsSnapshot = await db.collection('sessions').get();
+            const sessions = [];
+            for (const sessionDoc of sessionsSnapshot.docs) {
+                const sessionData = sessionDoc.data();
+                const diagnosesSnapshot = await db.collection('diagnoses').where('sessionCode', '==', sessionDoc.id).get();
+                const users = diagnosesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                sessions.push({ code: sessionDoc.id, ...sessionData, users: users });
+            }
+            return sessions;
+        } catch (error) {
+            console.error("Error getting all sessions with diagnoses:", error);
+            return [];
+        }
     }
 
+    /**
+     * Creates a new session in Firestore.
+     * @returns {Promise<{success: boolean, sessionCode?: string, message?: string}>}
+     */
+    async function createSessionInFirestore() {
+        try {
+            let newSessionCode;
+            let existingCodes = await getAllSessionCodesFromFirestore();
+            do {
+                newSessionCode = Math.floor(1000 + Math.random() * 9000).toString();
+            } while (existingCodes.includes(newSessionCode));
+
+            await db.collection('sessions').doc(newSessionCode).set({
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`Session ${newSessionCode} created in Firestore.`);
+            return { success: true, sessionCode: newSessionCode };
+        } catch (error) {
+            console.error("Error creating session in Firestore:", error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Gets details for a specific session from Firestore, including its diagnoses.
+     * @param {string} sessionCode
+     * @returns {Promise<{success: boolean, session?: Object, message?: string}>}
+     */
+    async function getSessionDetailsFromFirestore(sessionCode) {
+        try {
+            const sessionDoc = await db.collection('sessions').doc(sessionCode).get();
+            if (sessionDoc.exists) {
+                const diagnosesSnapshot = await db.collection('diagnoses').where('sessionCode', '==', sessionCode).get();
+                const users = diagnosesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                return { success: true, session: { code: sessionDoc.id, ...sessionDoc.data(), users: users } };
+            } else {
+                return { success: false, message: "Session not found" };
+            }
+        } catch (error) {
+            console.error("Error getting session details from Firestore:", error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Submits user diagnosis data to Firestore.
+     * @param {Object} diagnosisData
+     * @returns {Promise<{success: boolean, message?: string}>}
+     */
+    async function submitDiagnosisToFirestore(diagnosisData) {
+        try {
+            // Ensure session exists before submitting diagnosis
+            const sessionExists = await db.collection('sessions').doc(diagnosisData.sessionCode).get();
+            if (!sessionExists.exists) {
+                return { success: false, message: "Session does not exist." };
+            }
+
+            await db.collection('diagnoses').add({
+                ...diagnosisData,
+                diagnosisTime: firebase.firestore.FieldValue.serverTimestamp(),
+                // Store raw answers if needed for deeper analysis later
+                rawInterestScores: diagnosisData.interestScores,
+                rawUsageScores: diagnosisData.usageScores,
+            });
+            console.log("Diagnosis data submitted to Firestore:", diagnosisData);
+            return { success: true };
+        } catch (error) {
+            console.error("Error submitting diagnosis to Firestore:", error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Deletes a session and all its associated diagnoses from Firestore.
+     * @param {string} sessionCode
+     * @returns {Promise<{success: boolean, message?: string}>}
+     */
+    async function deleteSessionAndDiagnosesFromFirestore(sessionCode) {
+        try {
+            // Delete diagnoses first
+            const diagnosesSnapshot = await db.collection('diagnoses').where('sessionCode', '==', sessionCode).get();
+            const batch = db.batch();
+            diagnosesSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+
+            // Delete session document
+            await db.collection('sessions').doc(sessionCode).delete();
+
+            console.log(`Session ${sessionCode} and its diagnoses deleted from Firestore.`);
+            return { success: true };
+        } catch (error) {
+            console.error("Error deleting session and diagnoses from Firestore:", error);
+            return { success: false, message: error.message };
+        }
+    }
 
     // --- Initial Render ---
-    // Load initial sessions from simulated backend
-    apiCall('GET_ALL_SESSIONS').then(sessions => {
-        allSessions = sessions;
-        showWelcomeScreen();
-    });
+    showWelcomeScreen();
     
-
     // --- Functions ---
     function showWelcomeScreen() {
         const welcomeHTML = `
@@ -103,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sessionCode = sessionCodeInput.value.trim();
         
         if (sessionCode.length === 4 && !isNaN(sessionCode)) {
-            const response = await apiCall('GET_SESSION_DETAILS', { sessionCode });
+            const response = await getSessionDetailsFromFirestore(sessionCode);
             if (response.success && response.session) {
                 console.log(`세션 코드 ${sessionCode}으로 진단을 시작합니다.`);
                 renderStep0(sessionCode);
@@ -363,18 +456,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const userResultData = {
             sessionCode: userData.sessionCode,
             name: userData.name,
+            interestScores: userData.interestScores, // Store raw scores
+            usageScores: userData.usageScores,   // Store raw scores
             averageInterestScore: userData.averageInterestScore,
             averageUsageScore: userData.averageUsageScore,
             passionDensity: parseFloat(passionDensity),
             persona: persona,
             personaColor: personaColor
         };
-        const submitResponse = await apiCall('SUBMIT_USER_DATA', { sessionCode: userData.sessionCode, userData: userResultData });
+        const submitResponse = await submitDiagnosisToFirestore(userResultData);
         if (!submitResponse.success) {
             alert('결과 저장에 실패했습니다. 세션 코드를 확인해주세요.');
             showWelcomeScreen();
             return;
         }
+
+        // Fetch all diagnoses for the current session to plot
+        const sessionDetails = await getSessionDetailsFromFirestore(userData.sessionCode);
+        const allDiagnosesInSession = sessionDetails.success ? sessionDetails.session.users : [userResultData]; // `users` here refers to diagnoses
 
         const resultHTML = `
             <section id="result-screen" class="fade-in float-up">
@@ -401,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><strong>세션 코드:</strong> <span class="text-gray-100">${userData.sessionCode}</span></p>
                         <p><strong>관심도 (평균):</strong> <span class="text-gray-100">${userData.averageInterestScore}점</span></p>
                         <p><strong>활용도 (평균):</strong> <span class="text-gray-100">${userData.averageUsageScore}점</span></p>
-                        <p><strong>열정의 농도:</strong> <span class="text-gray-100">${passionDensity}점</span></p>
+                        <p><strong>열정의 농도:</strong> <span class="text-gray-100">${parseFloat(passionDensity)}점</span></p>
                     </div>
 
                     <button id="restart-btn" class="w-full mt-8 watercolor-btn text-white font-bold py-3 px-6 rounded-lg">
@@ -414,42 +513,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Render Chart
         const ctx = document.getElementById('insightChart').getContext('2d');
+        const datasetsForChart = allDiagnosesInSession.map(diagnosis => ({
+            label: diagnosis.name,
+            data: [{
+                x: diagnosis.averageInterestScore,
+                y: diagnosis.averageUsageScore
+            }],
+            backgroundColor: diagnosis.personaColor,
+            borderColor: diagnosis.personaColor,
+            borderWidth: 2,
+            pointRadius: 5 + (diagnosis.passionDensity - 1) * 2,
+            pointBackgroundColor: diagnosis.personaColor,
+            pointBorderColor: 'white',
+            pointBorderWidth: 2,
+            pointStyle: 'circle',
+            pointHoverRadius: 8 + (diagnosis.passionDensity - 1) * 2,
+            pointHitRadius: 10
+        }));
+
         new Chart(ctx, {
             type: 'scatter',
             data: {
-                datasets: [{
-                    label: userData.name,
-                    data: [{
-                        x: userData.averageInterestScore,
-                        y: userData.averageUsageScore
-                    }],
-                    backgroundColor: personaColor,
-                    borderColor: personaColor,
-                    borderWidth: 2,
-                    pointRadius: 5 + (parseFloat(passionDensity) - 1) * 2, // Map C to radius (1-5 -> 5-13)
-                    pointBackgroundColor: personaColor,
-                    pointBorderColor: 'white',
-                    pointBorderWidth: 2,
-                    pointStyle: 'circle',
-                    pointHoverRadius: 8 + (parseFloat(passionDensity) - 1) * 2,
-                    pointHitRadius: 10
-                }]
+                datasets: datasetsForChart
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false
+                        display: datasetsForChart.length > 1, // Only display legend if multiple users
+                        labels: {
+                            color: '#e2e8f0' // text-gray-300
+                        }
                     },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                const label = context.dataset.label || '';
-                                if (context.raw.x !== null) {
-                                    return `${label}: 관심도 ${context.raw.x}, 활용도 ${context.raw.y}, 열정 ${passionDensity}`;
-                                }
-                                return label;
+                                const userDiagnosis = allDiagnosesInSession[context.datasetIndex];
+                                return `${userDiagnosis.name} (${userDiagnosis.persona}): 관심도 ${userDiagnosis.averageInterestScore}, 활용도 ${userDiagnosis.averageUsageScore}, 열정 ${userDiagnosis.passionDensity}`;
                             }
                         },
                         backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -590,14 +691,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Admin Dashboard ---
     async function renderAdminDashboard() {
-        const sessionsResponse = await apiCall('GET_ALL_SESSIONS');
-        if (sessionsResponse.success) {
-            allSessions = sessionsResponse.sessions; // Update local allSessions with data from backend
-        } else {
-            console.error("Failed to fetch sessions:", sessionsResponse.message);
-            allSessions = []; // Fallback
-        }
-
+        const allSessionsWithDiagnoses = await getAllSessionsWithDiagnosesFromFirestore();
+        console.log("Fetched sessions for dashboard:", allSessionsWithDiagnoses);
+        
         appContainer.innerHTML = ''; // Clear current content
         const adminDashboardHTML = `
             <section id="admin-dashboard-screen" class="fade-in float-up">
@@ -626,10 +722,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Populate active sessions list
         const activeSessionsList = document.getElementById('active-sessions-list');
-        if (allSessions.length === 0) {
+        if (allSessionsWithDiagnoses.length === 0) {
             activeSessionsList.innerHTML = `<li class="text-center text-gray-500">생성된 세션이 없습니다.</li>`;
         } else {
-            activeSessionsList.innerHTML = allSessions.map(session => `
+            activeSessionsList.innerHTML = allSessionsWithDiagnoses.map(session => `
                 <li class="flex justify-between items-center p-2 bg-gray-900 rounded-lg">
                     <span>세션 코드: <strong class="text-gray-100">${session.code}</strong> (${session.users.length}명 참여)</span>
                     <div>
@@ -661,7 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function createNewSession() {
-        const response = await apiCall('CREATE_SESSION');
+        const response = await createSessionInFirestore();
         if (response.success) {
             alert(`새로운 세션이 생성되었습니다: ${response.sessionCode}`);
             renderAdminDashboard(); // Refresh dashboard
@@ -671,7 +767,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function deleteSession(sessionCode) {
-        const response = await apiCall('DELETE_SESSION', { sessionCode });
+        const response = await deleteSessionAndDiagnosesFromFirestore(sessionCode);
         if (response.success) {
             alert(`세션 ${sessionCode}가 삭제되었습니다.`);
             renderAdminDashboard(); // Refresh dashboard
@@ -681,13 +777,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function viewSessionResults(sessionCode) {
-        const response = await apiCall('GET_SESSION_DETAILS', { sessionCode });
-        if (!response.success || !response.session) {
+        const sessionDetails = await getSessionDetailsFromFirestore(sessionCode);
+        if (!sessionDetails.success || !sessionDetails.session) {
             alert('세션을 찾을 수 없거나 데이터를 불러오지 못했습니다.');
             renderAdminDashboard();
             return;
         }
-        const session = response.session;
+        const session = sessionDetails.session;
 
         appContainer.innerHTML = ''; // Clear current content
         const sessionResultHTML = `
@@ -873,8 +969,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
 
-        document.getElementById('back-to-dashboard-btn').addEventListener('click', () => {
-            renderAdminDashboard();
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            showWelcomeScreen(); // Go back to the welcome screen
         });
     }
 

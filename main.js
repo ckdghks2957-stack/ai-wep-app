@@ -28,11 +28,89 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     // --- Global Data Storage (Client-side simulation) ---
-    // Structure: { sessionCode: '1234', users: [{...userData1}, {...userData2}], createdAt: Date }
-    let allSessions = loadSessions(); 
+    // NOTE: This will be replaced by actual API calls to Google Apps Script.
+    // For now, it simulates an empty state or pre-loaded data.
+    let allSessions = []; 
+
+    // --- Backend API Simulation (will be replaced by actual GAS calls) ---
+    // Placeholder URL for your deployed Google Apps Script Web App
+    // IMPORTANT: Replace this with your actual GAS Web App URL after deployment
+    const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE'; 
+
+    async function apiCall(action, payload = {}) {
+        console.log(`API Call - Action: ${action}, Payload:`, payload);
+        // This is where you would make a fetch request to your GAS Web App
+        // Example:
+        // const response = await fetch(`${GAS_WEB_APP_URL}?action=${action}`, {
+        //     method: 'POST', // or 'GET' depending on your GAS doGet/doPost
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //     },
+        //     body: JSON.stringify(payload),
+        // });
+        // return response.json();
+
+        // --- SIMULATION ONLY ---
+        // Replace this entire simulation block with actual fetch calls to your GAS Web App
+        return new Promise(resolve => {
+            setTimeout(() => {
+                let result = {};
+                switch (action) {
+                    case 'GET_ALL_SESSIONS':
+                        // In a real scenario, GAS would fetch from Google Sheet
+                        result = allSessions; 
+                        break;
+                    case 'CREATE_SESSION':
+                        let newCode;
+                        do {
+                            newCode = Math.floor(1000 + Math.random() * 9000).toString();
+                        } while (allSessions.some(session => session.code === newCode));
+                        const newSession = { code: newCode, users: [], createdAt: new Date().toISOString() };
+                        allSessions.push(newSession);
+                        console.log(`[SIMULATION] Created session: ${newCode}`);
+                        result = { success: true, sessionCode: newCode };
+                        break;
+                    case 'GET_SESSION_DETAILS':
+                        const session = allSessions.find(s => s.code === payload.sessionCode);
+                        result = { success: !!session, session: session };
+                        break;
+                    case 'SUBMIT_USER_DATA':
+                        const targetSession = allSessions.find(s => s.code === payload.sessionCode);
+                        if (targetSession) {
+                            targetSession.users.push(payload.userData);
+                            console.log(`[SIMULATION] User data submitted to session ${payload.sessionCode}:`, payload.userData);
+                            result = { success: true };
+                        } else {
+                            result = { success: false, message: 'Session not found' };
+                        }
+                        break;
+                    case 'GET_SESSION_USERS':
+                        const sessionToGetUsers = allSessions.find(s => s.code === payload.sessionCode);
+                        result = { success: !!sessionToGetUsers, users: sessionToGetUsers ? sessionToGetUsers.users : [] };
+                        break;
+                    case 'DELETE_SESSION':
+                        const initialLength = allSessions.length;
+                        allSessions = allSessions.filter(s => s.code !== payload.sessionCode);
+                        console.log(`[SIMULATION] Deleted session: ${payload.sessionCode}`);
+                        result = { success: allSessions.length < initialLength };
+                        break;
+                    default:
+                        result = { success: false, message: 'Unknown API action' };
+                }
+                resolve(result);
+            }, 500); // Simulate network delay
+        });
+        // --- END SIMULATION ---
+    }
+
 
     // --- Initial Render ---
-    showWelcomeScreen();
+    // Load initial sessions from simulated backend
+    apiCall('GET_ALL_SESSIONS').then(sessions => {
+        allSessions = sessions;
+        showWelcomeScreen();
+    });
+    
 
     // --- Functions ---
     function showWelcomeScreen() {
@@ -59,17 +137,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('admin-login-btn').addEventListener('click', handleAdminLogin);
     }
 
-    function handleStart() {
+    async function handleStart() {
         const sessionCodeInput = document.getElementById('session-code');
         const sessionCode = sessionCodeInput.value.trim();
-        // Check if session code exists
-        const sessionExists = allSessions.some(session => session.code === sessionCode);
-
-        if (sessionCode.length === 4 && !isNaN(sessionCode) && sessionExists) {
-            console.log(`세션 코드 ${sessionCode}으로 진단을 시작합니다.`);
-            renderStep0(sessionCode);
-        } else if (sessionCode.length === 4 && !isNaN(sessionCode) && !sessionExists) {
-            alert('존재하지 않는 세션 코드입니다. 관리자에게 문의해주세요.');
+        
+        if (sessionCode.length === 4 && !isNaN(sessionCode)) {
+            const response = await apiCall('GET_SESSION_DETAILS', { sessionCode });
+            if (response.success && response.session) {
+                console.log(`세션 코드 ${sessionCode}으로 진단을 시작합니다.`);
+                renderStep0(sessionCode);
+            } else {
+                alert('존재하지 않는 세션 코드입니다. 관리자에게 문의해주세요.');
+            }
         } else {
             alert('유효한 4자리 숫자 코드를 입력해주세요.');
         }
@@ -281,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderResultScreen(userData) {
+    async function renderResultScreen(userData) {
         appContainer.innerHTML = ''; // Clear previous content
 
         // Calculate Passion Density (C-indicator)
@@ -319,18 +398,22 @@ document.addEventListener('DOMContentLoaded', () => {
             personaChartBackgroundColor = 'rgba(160, 174, 192, 0.15)'; // Increased opacity
         }
 
-        // Store user data
-        const currentSessionIndex = allSessions.findIndex(s => s.code === userData.sessionCode);
-        if (currentSessionIndex !== -1) {
-            allSessions[currentSessionIndex].users.push({
-                ...userData,
-                passionDensity: parseFloat(passionDensity),
-                persona: persona,
-                personaColor: personaColor
-            });
-            saveSessions();
+        // Store user data via API
+        const userResultData = {
+            sessionCode: userData.sessionCode,
+            name: userData.name,
+            averageInterestScore: userData.averageInterestScore,
+            averageUsageScore: userData.averageUsageScore,
+            passionDensity: parseFloat(passionDensity),
+            persona: persona,
+            personaColor: personaColor
+        };
+        const submitResponse = await apiCall('SUBMIT_USER_DATA', { sessionCode: userData.sessionCode, userData: userResultData });
+        if (!submitResponse.success) {
+            alert('결과 저장에 실패했습니다. 세션 코드를 확인해주세요.');
+            showWelcomeScreen();
+            return;
         }
-
 
         const resultHTML = `
             <section id="result-screen" class="fade-in float-up">
@@ -462,8 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             color: '#e2e8f0' // text-gray-300
                         }
                     }
-                },
-                // Request 3: Quadrant coloring in chart background is handled by plugin
+                }
             },
             plugins: [{
                 id: 'quadrantBackground',
@@ -475,7 +557,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const centerX_pixel = x.getPixelForValue(centerX);
                     const centerY_pixel = y.getPixelForValue(centerY);
 
-                    // Quadrant definitions for text labels
                     const quadrants = [
                         { name: 'AI 전문가', x: centerX_pixel + (right - centerX_pixel) / 2, y: top + (centerY_pixel - top) / 2, fillStyle: 'rgba(99, 179, 237, 0.15)' }, // Top Right
                         { name: 'AI 꿈나무', x: centerX_pixel + (right - centerX_pixel) / 2, y: centerY_pixel + (bottom - centerY_pixel) / 2, fillStyle: 'rgba(183, 148, 244, 0.15)' }, // Bottom Right
@@ -547,7 +628,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Admin Dashboard ---
-    function renderAdminDashboard() {
+    async function renderAdminDashboard() {
+        const sessionsResponse = await apiCall('GET_ALL_SESSIONS');
+        if (sessionsResponse.success) {
+            allSessions = sessionsResponse.sessions; // Update local allSessions with data from backend
+        } else {
+            console.error("Failed to fetch sessions:", sessionsResponse.message);
+            allSessions = []; // Fallback
+        }
+
         appContainer.innerHTML = ''; // Clear current content
         const adminDashboardHTML = `
             <section id="admin-dashboard-screen" class="fade-in float-up">
@@ -582,7 +671,10 @@ document.addEventListener('DOMContentLoaded', () => {
             activeSessionsList.innerHTML = allSessions.map(session => `
                 <li class="flex justify-between items-center p-2 bg-gray-900 rounded-lg">
                     <span>세션 코드: <strong class="text-gray-100">${session.code}</strong> (${session.users.length}명 참여)</span>
-                    <button class="view-session-btn text-blue-400 hover:underline" data-session-code="${session.code}">결과 보기</button>
+                    <div>
+                        <button class="view-session-btn text-blue-400 hover:underline mr-2" data-session-code="${session.code}">결과 보기</button>
+                        <button class="delete-session-btn text-red-400 hover:underline" data-session-code="${session.code}">삭제</button>
+                    </div>
                 </li>
             `).join('');
         }
@@ -594,34 +686,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 viewSessionResults(sessionCodeToView);
             });
         });
+        document.querySelectorAll('.delete-session-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const sessionCodeToDelete = e.target.dataset.sessionCode;
+                if (confirm(`정말로 세션 ${sessionCodeToDelete}를 삭제하시겠습니까?`)) {
+                    deleteSession(sessionCodeToDelete);
+                }
+            });
+        });
         document.getElementById('admin-dashboard-back-btn').addEventListener('click', () => {
             showAdminLogin();
         });
     }
 
-    function createNewSession() {
-        let newSessionCode;
-        do {
-            newSessionCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit code
-        } while (allSessions.some(session => session.code === newSessionCode)); // Ensure uniqueness
-
-        allSessions.push({
-            code: newSessionCode,
-            users: [],
-            createdAt: new Date().toISOString()
-        });
-        saveSessions();
-        alert(`새로운 세션이 생성되었습니다: ${newSessionCode}`);
-        renderAdminDashboard(); // Refresh dashboard to show new session
+    async function createNewSession() {
+        const response = await apiCall('CREATE_SESSION');
+        if (response.success) {
+            alert(`새로운 세션이 생성되었습니다: ${response.sessionCode}`);
+            renderAdminDashboard(); // Refresh dashboard
+        } else {
+            alert('세션 생성에 실패했습니다: ' + response.message);
+        }
     }
 
-    function viewSessionResults(sessionCode) {
-        const session = allSessions.find(s => s.code === sessionCode);
-        if (!session) {
-            alert('세션을 찾을 수 없습니다.');
+    async function deleteSession(sessionCode) {
+        const response = await apiCall('DELETE_SESSION', { sessionCode });
+        if (response.success) {
+            alert(`세션 ${sessionCode}가 삭제되었습니다.`);
+            renderAdminDashboard(); // Refresh dashboard
+        } else {
+            alert('세션 삭제에 실패했습니다: ' + response.message);
+        }
+    }
+
+    async function viewSessionResults(sessionCode) {
+        const response = await apiCall('GET_SESSION_DETAILS', { sessionCode });
+        if (!response.success || !response.session) {
+            alert('세션을 찾을 수 없거나 데이터를 불러오지 못했습니다.');
             renderAdminDashboard();
             return;
         }
+        const session = response.session;
 
         appContainer.innerHTML = ''; // Clear current content
         const sessionResultHTML = `
@@ -648,7 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 session.users.map(user => `
                                 <li class="flex justify-between items-center p-2 bg-gray-900 rounded-lg">
                                     <span><strong class="text-gray-100">${user.name}</strong> (${user.persona})</span>
-                                    <span style="color: ${user.personaColor};">점수: X=${user.averageInterestScore}, Y=${user.averageUsageScore}, C=${user.passionDensity}</span>
+                                    <span style="color: ${user.personaColor};">X=${user.averageInterestScore}, Y=${user.averageUsageScore}, C=${user.passionDensity}</span>
                                 </li>
                                 `).join('')
                             }
@@ -790,12 +895,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     ctx.textBaseline = 'middle';
 
                     quadrants.forEach(q => {
+                        // Draw background
                         ctx.fillStyle = q.fillStyle;
                         if (q.name === 'AI 전문가') ctx.fillRect(centerX_pixel, top, right - centerX_pixel, centerY_pixel - top);
                         else if (q.name === 'AI 꿈나무') ctx.fillRect(centerX_pixel, centerY_pixel, right - centerX_pixel, bottom - centerY_pixel);
                         else if (q.name === 'AI 재능러') ctx.fillRect(left, top, centerX_pixel - left, centerY_pixel - top);
                         else if (q.name === 'AI 병아리') ctx.fillRect(left, centerY_pixel, centerX_pixel - left, bottom - centerY_pixel);
                         
+                        // Draw text
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
                         ctx.fillText(q.name, q.x, q.y);
                     });
@@ -808,16 +915,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('back-to-dashboard-btn').addEventListener('click', () => {
             renderAdminDashboard();
         });
-    }
-
-    // --- Local Storage Utilities ---
-    function loadSessions() {
-        const storedSessions = localStorage.getItem('aiInsightSessions');
-        return storedSessions ? JSON.parse(storedSessions) : [];
-    }
-
-    function saveSessions() {
-        localStorage.setItem('aiInsightSessions', JSON.stringify(allSessions));
     }
 
 

@@ -292,22 +292,22 @@ document.addEventListener('DOMContentLoaded', () => {
             persona = 'AI 전문가';
             personaDescription = '관심과 실력을 겸비한 전문가';
             personaColor = '#63b3ed'; // Tailwind blue-300
-            personaChartBackgroundColor = 'rgba(99, 179, 237, 0.2)';
+            personaChartBackgroundColor = 'rgba(99, 179, 237, 0.15)'; // Increased opacity
         } else if (userData.averageInterestScore >= centerX && userData.averageUsageScore < centerY) {
             persona = 'AI 꿈나무';
             personaDescription = '호기심은 많으나 실전 경험 필요';
             personaColor = '#b794f4'; // Tailwind purple-300
-            personaChartBackgroundColor = 'rgba(183, 148, 244, 0.2)';
+            personaChartBackgroundColor = 'rgba(183, 148, 244, 0.15)'; // Increased opacity
         } else if (userData.averageInterestScore < centerX && userData.averageUsageScore >= centerY) {
             persona = 'AI 재능러';
             personaDescription = '실무엔 강하나 트렌드 관심 부족';
             personaColor = '#68d391'; // Tailwind green-300
-            personaChartBackgroundColor = 'rgba(104, 211, 145, 0.2)';
+            personaChartBackgroundColor = 'rgba(104, 211, 145, 0.15)'; // Increased opacity
         } else {
             persona = 'AI 병아리';
             personaDescription = '이제 막 시작하는 입문자';
             personaColor = '#a0aec0'; // Tailwind gray-400
-            personaChartBackgroundColor = 'rgba(160, 174, 192, 0.2)';
+            personaChartBackgroundColor = 'rgba(160, 174, 192, 0.15)'; // Increased opacity
         }
 
         const resultHTML = `
@@ -454,20 +454,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     const centerY_pixel = y.getPixelForValue(centerY);
 
                     // AI 전문가 (Top Right)
-                    ctx.fillStyle = 'rgba(99, 179, 237, 0.05)'; // Light transparent blue
+                    ctx.fillStyle = 'rgba(99, 179, 237, 0.15)'; // Light transparent blue
                     ctx.fillRect(centerX_pixel, top, right - centerX_pixel, centerY_pixel - top);
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.font = 'bold 16px Gowun Dodum';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.fillText('AI 전문가', centerX_pixel + (right - centerX_pixel) / 2, top + (centerY_pixel - top) / 2);
 
                     // AI 꿈나무 (Bottom Right)
-                    ctx.fillStyle = 'rgba(183, 148, 244, 0.05)'; // Light transparent purple
+                    ctx.fillStyle = 'rgba(183, 148, 244, 0.15)'; // Light transparent purple
                     ctx.fillRect(centerX_pixel, centerY_pixel, right - centerX_pixel, bottom - centerY_pixel);
+                    ctx.fillText('AI 꿈나무', centerX_pixel + (right - centerX_pixel) / 2, centerY_pixel + (bottom - centerY_pixel) / 2);
 
                     // AI 재능러 (Top Left)
-                    ctx.fillStyle = 'rgba(104, 211, 145, 0.05)'; // Light transparent green
+                    ctx.fillStyle = 'rgba(104, 211, 145, 0.15)'; // Light transparent green
                     ctx.fillRect(left, top, centerX_pixel - left, centerY_pixel - top);
+                    ctx.fillText('AI 재능러', left + (centerX_pixel - left) / 2, top + (centerY_pixel - top) / 2);
 
                     // AI 병아리 (Bottom Left)
-                    ctx.fillStyle = 'rgba(160, 174, 192, 0.05)'; // Light transparent gray
+                    ctx.fillStyle = 'rgba(160, 174, 192, 0.15)'; // Light transparent gray
                     ctx.fillRect(left, centerY_pixel, centerX_pixel - left, bottom - centerY_pixel);
+                    ctx.fillText('AI 병아리', left + (centerX_pixel - left) / 2, centerY_pixel + (bottom - centerY_pixel) / 2);
 
                     ctx.restore();
                 }
